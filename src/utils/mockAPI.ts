@@ -24,7 +24,7 @@ export const mockAPI = {
   },
 
   // Мок выполнения шага
-  executeStep: async (element: WorkflowElement, context: Record<string, any>): Promise<any> => {
+  executeStep: async (element: WorkflowElement, _context: Record<string, any>): Promise<any> => {
     return new Promise((resolve) => {
       setTimeout(() => {
         let result: any;
