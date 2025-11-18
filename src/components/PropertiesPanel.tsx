@@ -1,221 +1,125 @@
 import React, { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
-import { updateElement } from '../store/workflowSlice';
+import { updateNode, removeNode } from '../store/workflowSlice';
+import { Settings, Trash2, Save } from 'lucide-react';
 
 const PropertiesPanel: React.FC = () => {
   const dispatch = useAppDispatch();
-  const selectedId = useAppSelector((state) => state.workflow.selectedElementId);
-  const elements = useAppSelector((state) => state.workflow.elements);
-  const selectedElement = elements.find((el) => el.id === selectedId);
+  const selectedNodeId = useAppSelector((state) => state.workflow.selectedNodeId);
+  const nodes = useAppSelector((state) => state.workflow.nodes);
+  const selectedNode = nodes.find((n) => n.id === selectedNodeId);
 
-  const [localConfig, setLocalConfig] = useState<Record<string, any>>({});
-  const [localLabel, setLocalLabel] = useState('');
+  const [name, setName] = useState('');
+  const [prompt, setPrompt] = useState('');
+  const [agentType, setAgentType] = useState<'llm' | 'tool' | 'memory'>('llm');
 
   useEffect(() => {
-    if (selectedElement) {
-      setLocalConfig(selectedElement.config || {});
-      setLocalLabel(selectedElement.label || '');
+    if (selectedNode) {
+      setName(selectedNode.data.config.name || '');
+      setPrompt(selectedNode.data.config.prompt || '');
+      setAgentType(selectedNode.data.config.agentType || 'llm');
     }
-  }, [selectedElement]);
+  }, [selectedNode]);
 
-  const handleUpdate = () => {
-    if (selectedElement) {
-      dispatch(updateElement({
-        id: selectedElement.id,
-        updates: {
-          label: localLabel,
-          config: localConfig,
+  const handleSave = () => {
+    if (selectedNode) {
+      dispatch(updateNode({
+        id: selectedNode.id,
+        data: {
+          config: {
+            name,
+            prompt,
+            agentType,
+          },
         },
       }));
     }
   };
 
-  const handleConfigChange = (key: string, value: any) => {
-    setLocalConfig((prev) => ({ ...prev, [key]: value }));
+  const handleDelete = () => {
+    if (selectedNode) {
+      dispatch(removeNode(selectedNode.id));
+    }
   };
 
-  if (!selectedElement) {
+  if (!selectedNode) {
     return (
-      <div className="bg-white border-b border-gray-200 p-4 flex flex-col items-center justify-center text-gray-400">
-        <div className="text-4xl mb-2">📋</div>
-        <p className="text-center text-sm">Выберите элемент</p>
+      <div className="h-full flex flex-col items-center justify-center p-8 text-gray-400">
+        <Settings className="w-16 h-16 mb-4 opacity-50" />
+        <p className="text-center text-sm">Select a node on the canvas to edit its properties</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white border-b border-gray-200 p-4 overflow-y-auto max-h-80">
-      <h2 className="text-lg font-bold text-gray-800 mb-3">Свойства</h2>
-      
-      <div className="mb-3 p-3 bg-gray-50 rounded">
-        <div className="text-xs text-gray-500 mb-1">Тип</div>
-        <div className="text-sm font-semibold capitalize">{selectedElement.type}</div>
+    <div className="h-full flex flex-col overflow-y-auto">
+      <div className="p-6 space-y-5">
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Agent Name
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Enter agent name"
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Agent Type
+          </label>
+          <select
+            value={agentType}
+            onChange={(e) => setAgentType(e.target.value as any)}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all capitalize"
+          >
+            <option value="llm">LLM Agent</option>
+            <option value="tool">Tool Agent</option>
+            <option value="memory">Memory</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Prompt / Instructions
+          </label>
+          <textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="Enter prompt or instructions for this agent..."
+            rows={8}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
+          />
+        </div>
+
+        <div className="pt-2 space-y-3">
+          <button
+            onClick={handleSave}
+            className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+          >
+            <Save className="w-4 h-4" />
+            Save Changes
+          </button>
+
+          <button
+            onClick={handleDelete}
+            className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete Agent
+          </button>
+        </div>
       </div>
 
-      <div className="mb-3">
-        <label className="block text-xs font-medium text-gray-700 mb-1">
-          Название
-        </label>
-        <input
-          type="text"
-          value={localLabel}
-          onChange={(e) => setLocalLabel(e.target.value)}
-          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        />
+      <div className="mt-auto p-4 border-t border-gray-200 bg-gray-50">
+        <div className="text-xs text-gray-500">
+          <p className="font-semibold mb-1">ID: {selectedNode.id}</p>
+          <p>Type: {selectedNode.data.config.agentType}</p>
+        </div>
       </div>
-
-      <div className="mb-3">
-        <label className="block text-xs font-medium text-gray-700 mb-1">
-          ID
-        </label>
-        <input
-          type="text"
-          value={selectedElement.id}
-          disabled
-          className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded bg-gray-100 text-gray-500"
-        />
-      </div>
-
-      <hr className="my-3 border-gray-200" />
-
-      <h3 className="text-sm font-semibold text-gray-800 mb-3">Конфигурация</h3>
-
-      {selectedElement.type === 'action' && (
-        <>
-          <div className="mb-3">
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Команда
-            </label>
-            <input
-              type="text"
-              value={localConfig.command || ''}
-              onChange={(e) => handleConfigChange('command', e.target.value)}
-              placeholder="например: processData"
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div className="mb-3">
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Параметры (JSON)
-            </label>
-            <textarea
-              value={localConfig.params || ''}
-              onChange={(e) => handleConfigChange('params', e.target.value)}
-              placeholder='{"key": "value"}'
-              className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 font-mono"
-              rows={2}
-            />
-          </div>
-        </>
-      )}
-
-      {selectedElement.type === 'condition' && (
-        <>
-          <div className="mb-3">
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Условие
-            </label>
-            <input
-              type="text"
-              value={localConfig.condition || ''}
-              onChange={(e) => handleConfigChange('condition', e.target.value)}
-              placeholder="например: value > 10"
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div className="mb-3">
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Действие при true
-            </label>
-            <input
-              type="text"
-              value={localConfig.trueAction || ''}
-              onChange={(e) => handleConfigChange('trueAction', e.target.value)}
-              placeholder="next-step-id"
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-        </>
-      )}
-
-      {selectedElement.type === 'loop' && (
-        <>
-          <div className="mb-3">
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Количество итераций
-            </label>
-            <input
-              type="number"
-              value={localConfig.iterations || 3}
-              onChange={(e) => handleConfigChange('iterations', parseInt(e.target.value))}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div className="mb-3">
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Переменная счетчика
-            </label>
-            <input
-              type="text"
-              value={localConfig.iterator || 'i'}
-              onChange={(e) => handleConfigChange('iterator', e.target.value)}
-              placeholder="i"
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-        </>
-      )}
-
-      {selectedElement.type === 'api' && (
-        <>
-          <div className="mb-3">
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Endpoint
-            </label>
-            <input
-              type="text"
-              value={localConfig.endpoint || ''}
-              onChange={(e) => handleConfigChange('endpoint', e.target.value)}
-              placeholder="/api/users"
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div className="mb-3">
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Метод
-            </label>
-            <select
-              value={localConfig.method || 'GET'}
-              onChange={(e) => handleConfigChange('method', e.target.value)}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="GET">GET</option>
-              <option value="POST">POST</option>
-              <option value="PUT">PUT</option>
-              <option value="DELETE">DELETE</option>
-            </select>
-          </div>
-          <div className="mb-3">
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Headers (JSON)
-            </label>
-            <textarea
-              value={localConfig.headers || ''}
-              onChange={(e) => handleConfigChange('headers', e.target.value)}
-              placeholder='{"Authorization": "Bearer token"}'
-              className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 font-mono"
-              rows={2}
-            />
-          </div>
-        </>
-      )}
-
-      <button
-        onClick={handleUpdate}
-        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded transition-colors shadow-md text-sm"
-      >
-        Применить изменения
-      </button>
     </div>
   );
 };

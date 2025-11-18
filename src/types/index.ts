@@ -1,36 +1,43 @@
-export type ElementType = 'action' | 'condition' | 'loop' | 'api';
+import { Node, Edge } from 'reactflow';
 
-export interface WorkflowElement {
-  id: string;
-  type: ElementType;
-  label: string;
-  x: number;
-  y: number;
-  config: Record<string, any>;
+export type AgentType = 'llm' | 'tool' | 'memory';
+
+export interface AgentConfig {
+  name: string;
+  prompt: string;
+  agentType: AgentType;
+}
+
+export interface WorkflowNode extends Node {
+  data: {
+    label: string;
+    config: AgentConfig;
+  };
 }
 
 export interface LogEntry {
   id: string;
   timestamp: number;
-  message: string;
-  type: 'info' | 'success' | 'error' | 'warning';
-  elementId?: string;
+  agentName: string;
+  agentType: AgentType;
+  input: string;
+  output: string;
+  status: 'success' | 'running' | 'error';
 }
 
 export interface ExecutionState {
   isRunning: boolean;
+  isPaused: boolean;
+  currentNodeId: string | null;
   currentStep: number;
   totalSteps: number;
-  context: Record<string, any>;
+  memory: Record<string, any>;
 }
 
 export interface WorkflowState {
-  elements: WorkflowElement[];
-  selectedElementId: string | null;
+  nodes: WorkflowNode[];
+  edges: Edge[];
+  selectedNodeId: string | null;
   logs: LogEntry[];
   execution: ExecutionState;
-  canvas: {
-    zoom: number;
-    pan: { x: number; y: number };
-  };
 }
